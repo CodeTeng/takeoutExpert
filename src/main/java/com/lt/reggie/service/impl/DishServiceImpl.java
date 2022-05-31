@@ -17,11 +17,13 @@ import com.lt.reggie.mapper.DishMapper;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +46,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
 
     @Autowired
     private CategoryMapper categoryMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 新增菜品，同时保存对应的口味数据
@@ -140,13 +145,22 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
 
     @Override
     public Result<List<DishDto>> getList(Dish dish) {
+        List<DishDto> dishDtoList = null;
+        // 动态构造key
+        String key = "dish_" + dish.getCategoryId() + " " + dish.getStatus();
+        // 先从redis中获取
+        dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        if (dishDtoList != null) {
+            // 如果存在，直接返回，无需查询数据库
+            return Result.success(dishDtoList);
+        }
         LambdaQueryWrapper<Dish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
         dishLambdaQueryWrapper.eq(Dish::getCategoryId, dish.getCategoryId());
         // 添加条件，查询状态为1（起售状态）的菜品
         dishLambdaQueryWrapper.eq(Dish::getStatus, 1);
         dishLambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> dishList = dishMapper.selectList(dishLambdaQueryWrapper);
-        List<DishDto> dishDtoList = dishList.stream().map(item -> {
+        dishDtoList = dishList.stream().map(item -> {
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(item, dishDto);
             Category category = categoryMapper.selectById(item.getCategoryId());
@@ -159,6 +173,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
             dishDto.setFlavors(flavors);
             return dishDto;
         }).collect(Collectors.toList());
+        // 如果不存在，需要查询数据库，将查询到的菜品数据缓存到Redis
+        redisTemplate.opsForValue().set(key, dishDtoList, 60, TimeUnit.MINUTES);
         return Result.success(dishDtoList);
     }
 

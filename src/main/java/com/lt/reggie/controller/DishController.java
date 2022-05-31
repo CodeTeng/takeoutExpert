@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,10 +37,7 @@ public class DishController {
     private DishService dishService;
 
     @Autowired
-    private CategoryService categoryService;
-
-    @Autowired
-    private DishFlavorService dishFlavorService;
+    private RedisTemplate redisTemplate;
 
     /**
      * 新增菜品
@@ -55,6 +53,10 @@ public class DishController {
         }
         log.info("新增菜品：{}", dishDto.toString());
         dishService.saveWithFlavor(dishDto);
+
+        // 清理某个分类下面的菜品缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
         return Result.success("新增菜品成功");
     }
 
@@ -97,6 +99,9 @@ public class DishController {
     public Result<String> update(@RequestBody DishDto dishDto) {
         log.info("修改菜品：{}", dishDto.toString());
         dishService.updateWithFlavor(dishDto);
+        // 清理某个分类下面的菜品缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
         return Result.success("修改菜品信息成功");
     }
 
@@ -158,8 +163,8 @@ public class DishController {
             }
             return dishService.delete(id[0]);
         } else {
-               LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
-               queryWrapper.in(Dish::getId, id);
+            LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(Dish::getId, id);
             List<Dish> dishList = dishService.list(queryWrapper);
             dishList.stream().forEach(item -> {
                 if (item.getStatus() == 1) {

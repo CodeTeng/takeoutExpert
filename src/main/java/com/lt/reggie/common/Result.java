@@ -2,6 +2,7 @@ package com.lt.reggie.common;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +12,7 @@ import java.util.Map;
  * @date: 2022/5/26 15:08
  */
 @Data
-public class Result<T> {
+public class Result<T> implements Serializable {
 
     /**
      * 返回编码 1---成功 0和其他数字---失败
