@@ -4,14 +4,38 @@ spring:
   application:
     name: reggie
   datasource:
+    # 数据库连接池配置
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: root
-      password:
+      password: 806823
   session:
     # session过期时间 1h
     timeout: 3600s
+  # 邮箱服务
+  mail:
+    host: smtp.qq.com  # 发送邮件的服务器地址
+    username: 2300858713@qq.com # 登录qq邮箱的账号
+    password: waazivmejnplecaa  # 开启 IMAP/SMTP服务 获得的授权码
+    default-encoding: UTF-8
+    protocol: smtp
+  # redis相关配置
+  redis:
+    host: localhost
+    port: 6379
+    database: 0 # 操作的是0号数据库
+    jedis:
+        # redis连接池配置
+        pool:
+          max-active: 8 # 最大连接数
+          max-wait: 1ms #连接池最大阻塞等待时间
+          max-idle: 4 #连接池中的最大空闲连接
+          min-idle: 0 #连接池中的最小空闲连接
+  cache:
+    redis:
+      time-to-live: 1800000 #设置缓存过期时间，可选 单位:ms(30min)
+# MP配置
 mybatis-plus:
   # 原生 MyBatis 所支持的配置
   configuration:
@@ -29,6 +53,7 @@ mybatis-plus:
 # 文件上传路径
 reggie:
   path: D:\MyCode\JavaProjects\web\reggie\reggie\img\
+# 阿里云短信配置
 sms:
   accessKeyId:
   secret:

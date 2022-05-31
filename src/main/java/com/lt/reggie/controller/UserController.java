@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lt.reggie.common.Result;
 import com.lt.reggie.entity.User;
 import com.lt.reggie.service.UserService;
+import com.lt.reggie.utils.MatilUtil;
 import com.lt.reggie.utils.SMSUtil;
 import com.lt.reggie.utils.ValidateCodeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -32,27 +33,47 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private MatilUtil matilUtil;
+
     /**
      * 发送手机短信验证码
      */
     @PostMapping("/sendMsg")
     public Result<String> sendMsg(@RequestBody User user, HttpSession httpSession) {
         // 获取手机号
+//        String phone = user.getPhone();
+//
+//        if (StringUtils.isNotEmpty(phone)) {
+//            // 随机生成4位数验证码
+//            String code = ValidateCodeUtil.generateValidateCode(4).toString();
+//            log.info("验证码：{}", code);
+//
+//            // 调用阿里云提供的短信服务API完成发送短信
+//            SMSUtil.sendMessage(phone, code);
+//
+//            // 需要将生成的验证码保存到Session
+//            httpSession.setAttribute(phone, code);
+//            return Result.success("手机验证码短信发送成功");
+//        }
+//        return Result.error("手机短信发送失败");
+
+        // 邮箱登录---获取邮箱
         String phone = user.getPhone();
-
+        String subject = "外卖专家登录验证码";
         if (StringUtils.isNotEmpty(phone)) {
-            // 随机生成4位数验证码
             String code = ValidateCodeUtil.generateValidateCode(4).toString();
-            log.info("验证码：{}", code);
+            String context = "欢迎使用外卖专家，登录验证码为: " + code + ",五分钟内有效，请妥善保管!";
+            log.info("code={}", code);
 
-            // 调用阿里云提供的短信服务API完成发送短信
-            SMSUtil.sendMessage(phone, code);
+            // 真正地发送邮箱验证码
+            matilUtil.sendMail(phone, subject, context);
 
-            // 需要将生成的验证码保存到Session
+            // 将随机生成的验证码保存到session中
             httpSession.setAttribute(phone, code);
-            return Result.success("手机验证码短信发送成功");
+            return Result.success("验证码发送成功，请及时查看!");
         }
-        return Result.error("手机短信发送失败");
+        return Result.error("验证码发送失败，请重新输入!");
     }
 
     /**
