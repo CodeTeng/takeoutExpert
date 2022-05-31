@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,6 +47,7 @@ public class SetmealController {
      * 新增套餐
      */
     @PostMapping
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> save(@RequestBody SetmealDto setmealDto) {
         log.info("套餐信息：{}", setmealDto.toString());
         setmealService.saveWithDish(setmealDto);
@@ -86,6 +89,7 @@ public class SetmealController {
      * 修改套餐和对应的菜品信息
      */
     @PutMapping
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> update(@RequestBody SetmealDto setmealDto) {
         log.info("修改套餐：{}", setmealDto.toString());
         setmealService.updateWithDish(setmealDto);
@@ -96,6 +100,7 @@ public class SetmealController {
      * (批量)更改菜品售卖状态
      */
     @PostMapping("/status/{status}")
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> sellout(Long[] ids, @PathVariable Integer status) {
         if (ids == null || ids.length <= 0) {
             throw new CustomException("参数错误");
@@ -123,6 +128,7 @@ public class SetmealController {
      * 删除套餐
      */
     @DeleteMapping
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> delete(@RequestParam List<Long> ids) {
         log.info("删除套餐:{}", ids);
         setmealService.removeWithDish(ids);
@@ -133,6 +139,7 @@ public class SetmealController {
      * 查询套餐信息
      */
     @GetMapping("/list")
+    @Cacheable(value = "setmealCache", key = "#setmeal.categoryId + '_' + #setmeal.status")
     public Result<List<Setmeal>> list(Setmeal setmeal) {
         log.info("查询套餐信息：{}", setmeal.toString());
         LambdaQueryWrapper<Setmeal> lambdaQueryWrapper = new LambdaQueryWrapper<>();
